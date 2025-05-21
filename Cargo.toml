@@ -6,15 +6,7 @@ authors = ["John Fabienke"]
 description = "A thread-safe, dynamically resizable circular buffer for high-throughput scenarios"
 license = "MIT"
 repository = "https://github.com/jfabienke/elasticq"
-keywords = [
-    "queue",
-    "buffer",
-    "circular-buffer",
-    "dynamic",
-    "concurrent",
-    "async",
-    "mpsc",
-]
+keywords = ["queue", "buffer", "circular-buffer", "dynamic", "concurrent"]
 categories = ["data-structures", "concurrency", "asynchronous"]
 readme = "README.md"
 documentation = "https://docs.rs/elasticq"
