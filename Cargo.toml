@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["John Fabienke"]
 description = "A thread-safe, dynamically resizable circular buffer for high-throughput scenarios"
 license = "MIT"
-repository = "https://github.com/yourusername/elasticq" # Update repository URL
+repository = "https://github.com/jfabienke/elasticq"
 keywords = [
     "queue",
     "buffer",
@@ -16,6 +16,9 @@ keywords = [
     "mpsc",
 ]
 categories = ["data-structures", "concurrency", "asynchronous"]
+readme = "README.md"
+documentation = "https://docs.rs/elasticq"
+homepage = "https://github.com/jfabienke/elasticq"
 
 [features]
 default = []
