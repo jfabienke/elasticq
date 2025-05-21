@@ -1,4 +1,3 @@
-```markdown
 # elasticq
 
 A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed for high-throughput scenarios.
@@ -205,6 +204,12 @@ Concurrent benchmarks (multiple producers, multiple consumers operating on singl
 
 Contributions are welcome! Please feel free to submit issues or pull requests. For major changes, please open an issue first to discuss your proposed changes.
 
+Top priority contributions are:
+
+*   **Performance Improvements:** Enhancements that increase throughput or reduce latency. Here the Locking Strategy could be improved by using more fine-grained locks or by using a different data structure altogether.
+*   **Documentation:** Clarifications or additions to the README, examples, or API documentation.
+*   **Testing:** Additional tests that cover edge cases or improve code coverage.
+
 ## Running Tests
 
 ```bash
@@ -220,5 +225,3 @@ cargo bench
 ## License
 
 This project is licensed under the MIT License. Please see the `LICENSE` file in the repository for the full license text.
-(Note: Ensure a `LICENSE` file with the MIT license text is present in your project root).
-```
