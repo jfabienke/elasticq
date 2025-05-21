@@ -1,0 +1,38 @@
+[package]
+name = "elasticq"
+version = "0.1.0"
+edition = "2021"
+authors = ["John Fabienke"]
+description = "A thread-safe, dynamically resizable circular buffer for high-throughput scenarios"
+license = "MIT"
+repository = "https://github.com/yourusername/elasticq" # Update repository URL
+keywords = [
+    "queue",
+    "buffer",
+    "circular-buffer",
+    "dynamic",
+    "concurrent",
+    "async",
+    "mpsc",
+]
+categories = ["data-structures", "concurrency", "asynchronous"]
+
+[features]
+default = []
+async = ["tokio"]
+
+[dependencies]
+parking_lot = "0.12"
+thiserror = "1.0"
+
+[dependencies.tokio]
+version = "1.21"
+optional = true
+features = ["sync", "time"]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "buffer_benchmarks"
+harness = false
