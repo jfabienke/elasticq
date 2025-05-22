@@ -167,6 +167,7 @@ The main struct is `DynamicCircularBuffer<T>`. Key methods include:
 ## Performance Insights
 
 Benchmarks provide a general performance profile. Actual performance may vary based on workload and hardware.
+These benchmarks were run on a Mac Studio with an M1 Ultra CPU.
 
 ### Single Operations
 *   A single `push` followed by a `pop` operation (no resizing/shrinking) takes approximately **~34 nanoseconds**.
@@ -225,3 +226,5 @@ cargo bench
 ## License
 
 This project is licensed under the MIT License. Please see the `LICENSE` file in the repository for the full license text.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jfabienke/elasticq)
