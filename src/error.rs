@@ -23,7 +23,12 @@ pub enum BufferError {
 
 impl BufferError {
     pub fn is_retriable(&self) -> bool {
-        matches!(self, BufferError::Full | BufferError::Timeout(_))
+        matches!(self, 
+            BufferError::Full | 
+            BufferError::Timeout(_) | 
+            BufferError::ResizeError(_) |
+            BufferError::Other(_)
+        )
     }
 
     pub fn is_capacity_error(&self) -> bool {

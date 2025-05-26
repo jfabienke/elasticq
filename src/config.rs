@@ -1,7 +1,7 @@
 use crate::BufferError;
 use std::time::Duration;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub initial_capacity: usize,
     pub min_capacity: usize,

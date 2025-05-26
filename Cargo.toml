@@ -12,6 +12,9 @@ readme = "README.md"
 documentation = "https://docs.rs/elasticq"
 homepage = "https://github.com/jfabienke/elasticq"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
+
 [features]
 default = []
 async = ["tokio"]
@@ -30,6 +33,9 @@ features = ["sync", "time"]
 
 [dev-dependencies]
 criterion = "0.3"
+proptest = "1.4"
+tokio-test = "0.4"
+loom = "0.7"
 
 [[bench]]
 name = "buffer_benchmarks"
