@@ -1,9 +1,9 @@
 [package]
 name = "elasticq"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["John Fabienke"]
-description = "A thread-safe, dynamically resizable circular buffer for high-throughput scenarios"
+description = "Thread-safe, dynamically resizable queues with lock-based and lock-free implementations for high-throughput scenarios"
 license = "MIT"
 repository = "https://github.com/jfabienke/elasticq"
 keywords = ["queue", "buffer", "circular-buffer", "dynamic", "concurrent"]
