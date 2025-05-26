@@ -15,10 +15,13 @@ homepage = "https://github.com/jfabienke/elasticq"
 [features]
 default = []
 async = ["tokio"]
+lock_free = ["portable-atomic"]
 
 [dependencies]
 parking_lot = "0.12"
 thiserror = "1.0"
+portable-atomic = { version = "1.6", optional = true }
+crossbeam-epoch = "0.9"
 
 [dependencies.tokio]
 version = "1.21"
@@ -31,3 +34,8 @@ criterion = "0.3"
 [[bench]]
 name = "buffer_benchmarks"
 harness = false
+
+[[bench]]
+name = "lock_free_benchmarks"
+harness = false
+required-features = ["lock_free"]

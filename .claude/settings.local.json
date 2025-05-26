@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(mkdir:*)",
+      "Bash(tlc:*)",
+      "Bash(brew list:*)",
+      "Bash(git add:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo bench:*)",
+      "Bash(cargo run:*)",
+      "Bash(timeout 300 cargo run --release --example scalability_test --features lock_free)"
+    ],
+    "deny": []
+  }
+}

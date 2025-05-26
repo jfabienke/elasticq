@@ -13,6 +13,11 @@ pub use config::Config;
 mod error;
 pub use error::{BufferError, BufferResult};
 
+#[cfg(feature = "lock_free")]
+pub mod lock_free;
+#[cfg(feature = "lock_free")]
+pub use lock_free::{LockFreeMPSCQueue, QueueStats};
+
 #[cfg(not(feature = "async"))]
 use parking_lot::{Mutex, RwLock};
 #[cfg(feature = "async")]

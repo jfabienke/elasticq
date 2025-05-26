@@ -192,7 +192,9 @@ name = "elasticq"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "crossbeam-epoch",
  "parking_lot",
+ "portable-atomic",
  "thiserror",
  "tokio",
 ]
@@ -371,6 +373,12 @@ checksum = "51bae2ac328883f7acdfea3d66a7c35751187f870bc81f94563733a154d7a670"
 dependencies = [
  "plotters-backend",
 ]
+
+[[package]]
+name = "portable-atomic"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "350e9b48cbc6b0e028b0473b114454c6316e57336ee184ceab6e53f72c178b3e"
 
 [[package]]
 name = "proc-macro2"
