@@ -29,7 +29,7 @@ crossbeam-epoch = "0.9"
 [dependencies.tokio]
 version = "1.21"
 optional = true
-features = ["sync", "time"]
+features = ["sync", "time", "macros"]
 
 [dev-dependencies]
 criterion = "0.3"

@@ -22,6 +22,8 @@ pub use lock_free::{LockFreeMPSCQueue, QueueStats};
 use parking_lot::{Mutex, RwLock};
 #[cfg(feature = "async")]
 use tokio::sync::{Mutex, RwLock};
+#[cfg(feature = "async")]
+use std::time::Duration;
 
 /// A thread-safe wrapper around `DynamicCircularBuffer`.
 pub type ThreadSafeDynamicCircularBuffer<T> = Arc<DynamicCircularBuffer<T>>;
@@ -109,8 +111,15 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
     /// buffer.push(42).expect("Failed to push item");
     /// ```
     pub fn push(&self, item: T) -> BufferResult<()> {
+        #[cfg(not(feature = "async"))]
         let _push_lock_guard = self.push_lock.lock();
+        #[cfg(feature = "async")]
+        let _push_lock_guard = self.push_lock.blocking_lock();
+        
+        #[cfg(not(feature = "async"))]
         let mut buffer_guard = self.buffer.lock();
+        #[cfg(feature = "async")]
+        let mut buffer_guard = self.buffer.blocking_lock();
 
         // Check against max_capacity using current length + 1 for the item to be pushed.
         if buffer_guard.len() >= self.config.max_capacity {
@@ -126,7 +135,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         let current_len_before_push = buffer_guard.len();
 
         let (should_attempt_grow, growth_factor_val, max_cap_val) = {
+            #[cfg(not(feature = "async"))]
             let capacity_read_guard = self.capacity.read();
+            #[cfg(feature = "async")]
+            let capacity_read_guard = self.capacity.blocking_read();
             let current_logical_cap = *capacity_read_guard;
             (
                 // Grow if current items >= current logical capacity, and we're not at max_capacity
@@ -138,7 +150,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         };
 
         if should_attempt_grow {
+            #[cfg(not(feature = "async"))]
             let mut capacity_write_guard = self.capacity.write();
+            #[cfg(feature = "async")]
+            let mut capacity_write_guard = self.capacity.blocking_write();
             // Re-check condition with the current logical capacity from the write lock.
             // The len used for new capacity calculation should be the number of items *before* the current push
             // if we are at capacity, or *after* if we are adding and that pushes us over.
@@ -174,7 +189,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         // After potential resize, check logical capacity again before pushing.
         // This handles the case where resize didn't happen or didn't make enough space
         // (e.g. already at max_capacity).
+        #[cfg(not(feature = "async"))]
         let current_logical_cap_after_resize_check = *self.capacity.read(); // Quick read lock
+        #[cfg(feature = "async")]
+        let current_logical_cap_after_resize_check = *self.capacity.blocking_read();
         if buffer_guard.len() >= current_logical_cap_after_resize_check {
             // If still full with respect to logical capacity and we are not at max_capacity
             // this implies a logic error in growth or max_capacity handling,
@@ -205,14 +223,24 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
     /// assert_eq!(item, 42);
     /// ```
     pub fn pop(&self) -> BufferResult<T> {
+        #[cfg(not(feature = "async"))]
         let _pop_lock_guard = self.pop_lock.lock();
+        #[cfg(feature = "async")]
+        let _pop_lock_guard = self.pop_lock.blocking_lock();
+        
+        #[cfg(not(feature = "async"))]
         let mut buffer_guard = self.buffer.lock();
+        #[cfg(feature = "async")]
+        let mut buffer_guard = self.buffer.blocking_lock();
 
         if let Some(item) = buffer_guard.pop_front() {
             let current_len_after_pop = buffer_guard.len();
 
             let (should_attempt_shrink, min_cap_val, shrink_thresh_val, growth_factor_val) = {
+                #[cfg(not(feature = "async"))]
                 let capacity_read_guard = self.capacity.read();
+                #[cfg(feature = "async")]
+                let capacity_read_guard = self.capacity.blocking_read();
                 let current_logical_cap = *capacity_read_guard;
                 (
                     current_len_after_pop
@@ -225,7 +253,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
             };
 
             if should_attempt_shrink {
+                #[cfg(not(feature = "async"))]
                 let mut capacity_write_guard = self.capacity.write();
+                #[cfg(feature = "async")]
+                let mut capacity_write_guard = self.capacity.blocking_write();
                 // Re-check condition with current logical capacity from write lock
                 if current_len_after_pop
                     <= (*capacity_write_guard as f64 * shrink_thresh_val) as usize
@@ -271,8 +302,15 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         }
         let num_items_to_push = items.len();
 
+        #[cfg(not(feature = "async"))]
         let _push_lock_guard = self.push_lock.lock();
+        #[cfg(feature = "async")]
+        let _push_lock_guard = self.push_lock.blocking_lock();
+        
+        #[cfg(not(feature = "async"))]
         let mut buffer_guard = self.buffer.lock();
+        #[cfg(feature = "async")]
+        let mut buffer_guard = self.buffer.blocking_lock();
 
         let current_len_before_push = buffer_guard.len();
         let potential_len_after_push = current_len_before_push + num_items_to_push;
@@ -282,7 +320,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         }
 
         let (should_attempt_grow, growth_factor_val, max_cap_val) = {
+            #[cfg(not(feature = "async"))]
             let capacity_read_guard = self.capacity.read();
+            #[cfg(feature = "async")]
+            let capacity_read_guard = self.capacity.blocking_read();
             let current_logical_cap = *capacity_read_guard;
             (
                 potential_len_after_push > current_logical_cap
@@ -293,7 +334,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         };
 
         if should_attempt_grow {
+            #[cfg(not(feature = "async"))]
             let mut capacity_write_guard = self.capacity.write();
+            #[cfg(feature = "async")]
+            let mut capacity_write_guard = self.capacity.blocking_write();
             // Re-check condition
             if potential_len_after_push > *capacity_write_guard
                 && *capacity_write_guard < max_cap_val
@@ -317,7 +361,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         }
 
         // After potential resize, check logical capacity again
+        #[cfg(not(feature = "async"))]
         let current_logical_cap_after_resize_check = *self.capacity.read();
+        #[cfg(feature = "async")]
+        let current_logical_cap_after_resize_check = *self.capacity.blocking_read();
         if potential_len_after_push > current_logical_cap_after_resize_check {
             // This implies we hit max_capacity or couldn't grow enough.
             // The initial check `potential_len_after_push > self.config.max_capacity` should cover this.
@@ -344,8 +391,15 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         if max_items_to_pop == 0 {
             return Ok(Vec::new());
         }
+        #[cfg(not(feature = "async"))]
         let _pop_lock_guard = self.pop_lock.lock();
+        #[cfg(feature = "async")]
+        let _pop_lock_guard = self.pop_lock.blocking_lock();
+        
+        #[cfg(not(feature = "async"))]
         let mut buffer_guard = self.buffer.lock();
+        #[cfg(feature = "async")]
+        let mut buffer_guard = self.buffer.blocking_lock();
 
         if buffer_guard.is_empty() {
             return Ok(Vec::new()); // Consistent with BufferError::Empty for single pop, but batch can return empty Vec
@@ -359,7 +413,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         // let vecdeque_physical_capacity = buffer_guard.capacity(); // Not directly used in this shrink calculation
 
         let (should_attempt_shrink, min_cap_val, shrink_thresh_val, growth_factor_val) = {
+            #[cfg(not(feature = "async"))]
             let capacity_read_guard = self.capacity.read();
+            #[cfg(feature = "async")]
+            let capacity_read_guard = self.capacity.blocking_read();
             let current_logical_cap = *capacity_read_guard;
             (
                 current_len_after_pop
@@ -372,7 +429,10 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
         };
 
         if should_attempt_shrink {
+            #[cfg(not(feature = "async"))]
             let mut capacity_write_guard = self.capacity.write();
+            #[cfg(feature = "async")]
+            let mut capacity_write_guard = self.capacity.blocking_write();
             if current_len_after_pop <= (*capacity_write_guard as f64 * shrink_thresh_val) as usize
                 && *capacity_write_guard > min_cap_val
             {
@@ -1328,13 +1388,13 @@ mod tests {
     #[cfg(feature = "async")]
     mod async_tests {
         use super::*;
-        use tokio::test as tokio_test; // Alias to avoid conflict if `test` is used elsewhere
+        // Note: using tokio_test crate for #[tokio::test] macro
 
         fn async_test_config() -> Config {
             Config::default()
         }
 
-        #[tokio_test]
+        #[tokio::test]
         async fn test_push_pop_async() {
             let buffer = DynamicCircularBuffer::new(async_test_config()).unwrap();
             buffer.push_async(1).await.unwrap();
@@ -1345,7 +1405,7 @@ mod tests {
             assert!(matches!(buffer.pop_async().await, Err(BufferError::Empty)));
         }
 
-        #[tokio_test]
+        #[tokio::test]
         async fn test_push_pop_async_timeout() {
             let buffer = DynamicCircularBuffer::new(
                 async_test_config().with_pop_timeout(Duration::from_millis(10)),
@@ -1374,7 +1434,7 @@ mod tests {
             );
         }
 
-        #[tokio_test]
+        #[tokio::test]
         async fn test_push_async_timeout_on_full_does_not_deadlock() {
             // Test that timeout works correctly even if buffer is full and push_async would block indefinitely (if it waited)
             let config = async_test_config()
@@ -1398,7 +1458,7 @@ mod tests {
             }
         }
 
-        #[tokio_test]
+        #[tokio::test]
         async fn test_push_batch_async_resize() {
             let config = async_test_config()
                 .with_initial_capacity(2)
@@ -1427,7 +1487,7 @@ mod tests {
             ));
         }
 
-        #[tokio_test]
+        #[tokio::test]
         async fn test_pop_batch_async_shrink() {
             let config = async_test_config()
                 .with_initial_capacity(10)
@@ -1450,7 +1510,7 @@ mod tests {
             assert_eq!(buffer.capacity(), 3, "Should shrink to min_capacity");
         }
 
-        #[tokio_test]
+        #[tokio::test]
         async fn test_push_batch_async_timeout() {
             let buffer = DynamicCircularBuffer::new(async_test_config()).unwrap();
             buffer
