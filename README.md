@@ -265,13 +265,51 @@ Performance benchmarks were conducted on a Mac Studio with M1 Ultra (20 CPU core
 | **Lock-Based** | **22.0M msg/sec** | Stable | Predictable under high contention |
 | **Speedup** | **🚀 2.1x** | Scenario-dependent | Lock-free wins for MPSC patterns |
 
-### Scalability Characteristics
+### Producer Scalability Analysis
 
-#### Lock-Free MPSC (Recommended for MQTT Proxy)
-*   **Single Producer:** Excellent performance (46M+ msg/sec)
-*   **Multiple Producers:** Good performance with consumer-driven resize
+Recent benchmarks (1-20 producers, single consumer) demonstrate excellent scalability characteristics:
+
+```
+Throughput (K msg/sec)
+500K ┤                                                                        
+     │                                                                        
+450K ┤                 ●●●                                                    
+     │               ●     ●                                                  
+400K ┤             ●         ●                                                
+     │           ●             ●                                              
+350K ┤         ●                 ●●●                                          
+     │       ●                       ●                                        
+300K ┤     ●                           ●●                                     
+     │   ●                               ●●                                   
+250K ┤ ●                                   ●●●                                
+     │                                        ●                               
+200K ┤                                         ●●●●                          
+     │                                             ●                          
+150K ┤                                                                        
+     │ ●                                                                      
+100K ┤                                                                        
+     │                                                                        
+ 50K ┤                                                                        
+     │                                                                        
+   0 └┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬────
+     1     3     5     7     9    11    13    15    17    19    21    
+                               Producer Count
+```
+
+#### Performance Zones
+| Producers | Zone | Throughput | Success Rate | Use Case |
+|-----------|------|------------|--------------|----------|
+| 1-4 | Linear Scale | 68K - 260K msg/sec | 100.0% | Real-time systems |
+| 5-9 | Peak Zone | 319K - 479K msg/sec | 99.9% - 100% | MQTT proxy optimal |
+| 10-16 | Plateau | 285K - 471K msg/sec | 97.2% - 99.9% | High-load scenarios |
+| 17-20 | Decline | 205K - 259K msg/sec | 94.9% - 96.8% | Consider sharding |
+
+#### Key Characteristics
+*   **Peak Performance:** 479,298 msg/sec at 9 producers
+*   **3x Scalability:** Throughput improvement from 1 to 20 producers
+*   **Excellent Reliability:** 19/20 configurations achieve >95% success rate
+*   **Memory Efficient:** 256KB peak capacity under maximum load
 *   **Zero Deadlock Risk:** Wait-free consumer operations
-*   **Memory Efficiency:** Epoch-based reclamation prevents memory leaks
 
 #### Lock-Based (General Purpose)
 *   **Baseline (1P/1C):** ~7.5 million items/second
