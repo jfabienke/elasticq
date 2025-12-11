@@ -1,6 +1,6 @@
 [package]
 name = "elasticq"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["John Fabienke"]
 description = "Thread-safe, dynamically resizable queues with lock-based and lock-free implementations for high-throughput scenarios"
@@ -19,6 +19,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(loom)'] }
 default = []
 async = ["tokio"]
 lock_free = ["portable-atomic"]
+priority = []
+streams = ["async", "futures-core", "tokio-stream"]
+persistent = ["serde", "memmap2", "bincode"]
+metrics = ["metrics-crate"]
 
 [dependencies]
 parking_lot = "0.12"
@@ -26,16 +30,32 @@ thiserror = "1.0"
 portable-atomic = { version = "1.6", optional = true }
 crossbeam-epoch = "0.9"
 
+# Optional dependencies for features
+futures-core = { version = "0.3", optional = true }
+tokio-stream = { version = "0.1", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+memmap2 = { version = "0.9", optional = true }
+bincode = { version = "1.3", optional = true }
+
 [dependencies.tokio]
 version = "1.21"
 optional = true
-features = ["sync", "time", "macros"]
+features = ["sync", "time", "macros", "rt"]
+
+[dependencies.metrics-crate]
+package = "metrics"
+version = "0.23"
+optional = true
 
 [dev-dependencies]
 criterion = "0.3"
 proptest = "1.4"
 tokio-test = "0.4"
 loom = "0.7"
+futures = "0.3"
+tokio = { version = "1.21", features = ["full", "test-util"] }
+serde_json = "1.0"
+tempfile = "3.10"
 
 [[bench]]
 name = "buffer_benchmarks"

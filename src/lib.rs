@@ -3,6 +3,26 @@
 //! This buffer is designed for high-throughput scenarios, particularly
 //! suitable for use in MQTT proxy applications where efficient message
 //! buffering is critical.
+//!
+//! # Features
+//!
+//! - **Default**: Lock-based circular buffer with dynamic resizing
+//! - **`async`**: Async/await support with Tokio
+//! - **`lock_free`**: Lock-free MPSC queue for high-throughput scenarios
+//! - **`priority`**: Priority queue with configurable levels (great for MQTT QoS)
+//! - **`streams`**: Async Stream and Sink integration
+//! - **`persistent`**: Durable buffer with crash recovery
+//! - **`metrics`**: Prometheus-compatible metrics and observability
+//!
+//! # Example
+//!
+//! ```
+//! use elasticq::{DynamicCircularBuffer, Config};
+//!
+//! let buffer = DynamicCircularBuffer::<i32>::new(Config::default()).unwrap();
+//! buffer.push(42).unwrap();
+//! assert_eq!(buffer.pop().unwrap(), 42);
+//! ```
 
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -17,6 +37,26 @@ pub use error::{BufferError, BufferResult};
 pub mod lock_free;
 #[cfg(feature = "lock_free")]
 pub use lock_free::{LockFreeMPSCQueue, QueueStats};
+
+#[cfg(feature = "priority")]
+pub mod priority;
+#[cfg(feature = "priority")]
+pub use priority::{PriorityCircularBuffer, PriorityConfig, PriorityStats};
+
+#[cfg(feature = "streams")]
+pub mod streams;
+#[cfg(feature = "streams")]
+pub use streams::{BufferChannel, BufferSink, BufferStream, BufferStreamExt};
+
+#[cfg(feature = "persistent")]
+pub mod persistent;
+#[cfg(feature = "persistent")]
+pub use persistent::{PersistentCircularBuffer, PersistentConfig, PersistentStats, SyncMode};
+
+#[cfg(feature = "metrics")]
+pub mod metrics;
+#[cfg(feature = "metrics")]
+pub use metrics::{register_metrics, InstrumentedBuffer, InstrumentedBufferRef, MetricsRecorder};
 
 #[cfg(not(feature = "async"))]
 use parking_lot::{Mutex, RwLock};

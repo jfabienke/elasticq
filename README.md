@@ -1,6 +1,6 @@
 # elasticq
 
-A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed for high-throughput scenarios. Now featuring both **lock-based** and **lock-free** implementations optimized for different use cases.
+A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed for high-throughput scenarios. Now featuring both **lock-based** and **lock-free** implementations optimized for different use cases, plus advanced features like **priority queues**, **async streams**, **persistence**, and **metrics**.
 
 ## Features
 
@@ -20,7 +20,7 @@ A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed 
 *   Excellent for general-purpose use with moderate concurrency
 *   Predictable performance characteristics
 
-#### 🚀 **Lock-Free Implementation** (New!)
+#### 🚀 **Lock-Free Implementation**
 *   **Zero-mutex MPSC queue** using atomic operations and epoch-based reclamation
 *   **2.1x faster** than lock-based implementation in single-threaded scenarios
 *   **46M+ messages/sec** throughput in optimized configurations
@@ -29,6 +29,32 @@ A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed 
 *   **Consumer-driven dynamic resizing** optimized for MQTT proxy use cases
 *   Enable with the `lock_free` feature flag
 
+### Advanced Features (New in v0.3.0!)
+
+#### 🎯 **Priority Queue** (`priority` feature)
+*   Multiple priority levels (default: 3 for MQTT QoS compatibility)
+*   Configurable fair queuing to prevent starvation
+*   Per-priority statistics and capacity management
+*   Ideal for QoS-based message processing
+
+#### 🌊 **Async Streams** (`streams` feature)
+*   `Stream` and `Sink` trait implementations
+*   `BufferChannel` for channel-like send/recv API
+*   Integration with `tokio-stream` and `futures` ecosystem
+*   Backpressure-aware streaming
+
+#### 💾 **Persistence** (`persistent` feature)
+*   Crash recovery with write-ahead logging
+*   Memory-mapped file backing for efficiency
+*   Configurable sync modes: `NoSync`, `Periodic`, `EveryWrite`
+*   Automatic compaction support
+
+#### 📊 **Metrics** (`metrics` feature)
+*   Integration with the `metrics` crate (Prometheus-compatible)
+*   Counters, gauges, and histograms for all operations
+*   Queue depth, capacity, utilization, and latency metrics
+*   Instrumented buffer wrappers for automatic recording
+
 ## Table of Contents
 
 1.  [Installation](#installation)
@@ -36,6 +62,10 @@ A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed 
     *   [Lock-Based Usage](#lock-based-usage-default)
     *   [Lock-Free Usage](#lock-free-usage-mpsc)
     *   [Asynchronous Usage](#asynchronous-usage)
+    *   [Priority Queue](#priority-queue-usage)
+    *   [Async Streams](#async-streams-usage)
+    *   [Persistence](#persistence-usage)
+    *   [Metrics](#metrics-usage)
 3.  [Configuration](#configuration)
 4.  [API Reference](#api-reference)
 5.  [Performance Analysis](#performance-analysis)
@@ -52,27 +82,52 @@ A thread-safe, dynamically resizable circular buffer (queue) for Rust, designed 
 ### Basic Installation (Lock-Based)
 ```toml
 [dependencies]
-elasticq = "0.1.0"
+elasticq = "0.3.0"
 ```
 
 ### Lock-Free Implementation
 ```toml
 [dependencies]
-elasticq = { version = "0.1.0", features = ["lock_free"] }
+elasticq = { version = "0.3.0", features = ["lock_free"] }
 ```
 
 ### With Async Support
 ```toml
 [dependencies]
-elasticq = { version = "0.1.0", features = ["async"] }
+elasticq = { version = "0.3.0", features = ["async"] }
 tokio = { version = "1", features = ["sync", "time"] }
+```
+
+### Priority Queue
+```toml
+[dependencies]
+elasticq = { version = "0.3.0", features = ["priority"] }
+```
+
+### Async Streams
+```toml
+[dependencies]
+elasticq = { version = "0.3.0", features = ["streams"] }
+tokio = { version = "1", features = ["sync", "time", "rt"] }
+```
+
+### Persistence
+```toml
+[dependencies]
+elasticq = { version = "0.3.0", features = ["persistent"] }
+```
+
+### Metrics/Observability
+```toml
+[dependencies]
+elasticq = { version = "0.3.0", features = ["metrics"] }
 ```
 
 ### All Features
 ```toml
 [dependencies]
-elasticq = { version = "0.1.0", features = ["async", "lock_free"] }
-tokio = { version = "1", features = ["sync", "time"] }
+elasticq = { version = "0.3.0", features = ["async", "lock_free", "priority", "streams", "persistent", "metrics"] }
+tokio = { version = "1", features = ["sync", "time", "rt"] }
 ```
 
 ## Quick Start
@@ -209,6 +264,155 @@ async fn main() -> Result<(), BufferError> {
     }
 
     Ok(())
+}
+```
+
+### Priority Queue Usage
+
+Perfect for MQTT QoS handling where messages have different priority levels:
+
+```rust
+use elasticq::priority::{PriorityCircularBuffer, PriorityConfig};
+use elasticq::BufferError;
+
+fn main() -> Result<(), BufferError> {
+    // Create a priority queue with 3 levels (matching MQTT QoS 0, 1, 2)
+    let config = PriorityConfig::default()
+        .with_priority_levels(3)
+        .with_fair_queuing(true)           // Prevent low-priority starvation
+        .with_max_consecutive_per_priority(5); // Process max 5 messages per priority before switching
+
+    let queue = PriorityCircularBuffer::<String>::new(config)?;
+
+    // Push messages with different priorities
+    queue.push_with_priority("QoS 0 message".to_string(), 0)?;  // Low priority
+    queue.push_with_priority("QoS 1 message".to_string(), 1)?;  // Medium priority
+    queue.push_with_priority("QoS 2 message".to_string(), 2)?;  // High priority (exactly once)
+
+    // Pop returns highest priority first
+    assert_eq!(queue.pop()?, "QoS 2 message".to_string());
+    assert_eq!(queue.pop()?, "QoS 1 message".to_string());
+    assert_eq!(queue.pop()?, "QoS 0 message".to_string());
+
+    // Check per-priority statistics
+    let stats = queue.stats();
+    println!("Priority stats: {:?}", stats);
+
+    Ok(())
+}
+```
+
+### Async Streams Usage
+
+Integrate with the async Rust ecosystem using `Stream` and `Sink` traits:
+
+```rust
+use elasticq::{DynamicCircularBuffer, Config};
+use elasticq::streams::{BufferStream, BufferSink, BufferChannel, BufferStreamExt};
+use std::sync::Arc;
+use std::time::Duration;
+
+#[tokio::main]
+async fn main() {
+    let buffer = Arc::new(DynamicCircularBuffer::<i32>::new(Config::default()).unwrap());
+
+    // Option 1: Use BufferChannel for channel-like API
+    let channel = BufferChannel::new(buffer.clone());
+
+    // Spawn a producer
+    let sender = channel.clone();
+    tokio::spawn(async move {
+        for i in 0..10 {
+            sender.send(i).await.unwrap();
+        }
+    });
+
+    // Consume messages
+    for _ in 0..10 {
+        let msg = channel.recv_timeout(Duration::from_secs(1)).await.unwrap();
+        println!("Received: {}", msg);
+    }
+
+    // Option 2: Use Stream/Sink pair with shared notify
+    let buffer2 = Arc::new(DynamicCircularBuffer::<i32>::new(Config::default()).unwrap());
+    let (stream, sink) = buffer2.stream_sink_pair();
+
+    // The sink notifies the stream when items are pushed
+    sink.send(42).await.unwrap();
+    sink.send_batch(vec![1, 2, 3]).await.unwrap();
+}
+```
+
+### Persistence Usage
+
+Enable crash recovery with write-ahead logging:
+
+```rust
+use elasticq::persistent::{PersistentCircularBuffer, PersistentConfig, SyncMode};
+use elasticq::BufferError;
+use std::path::Path;
+
+fn main() -> Result<(), BufferError> {
+    let config = PersistentConfig::default()
+        .with_file_path("/tmp/queue.dat")
+        .with_sync_mode(SyncMode::Periodic(std::time::Duration::from_secs(1)))
+        .with_max_log_entries(10000);
+
+    // Create persistent buffer (recovers data if file exists)
+    let buffer = PersistentCircularBuffer::<String>::new(config)?;
+
+    // Push messages (persisted to disk)
+    buffer.push("message 1".to_string())?;
+    buffer.push("message 2".to_string())?;
+
+    // Pop messages
+    let msg = buffer.pop()?;
+    println!("Got: {}", msg);
+
+    // Force sync to disk
+    buffer.sync()?;
+
+    // Compact the log file (removes processed entries)
+    buffer.compact()?;
+
+    // Check persistence stats
+    let stats = buffer.stats();
+    println!("Persistence stats: {:?}", stats);
+
+    Ok(())
+}
+```
+
+### Metrics Usage
+
+Monitor your queues with Prometheus-compatible metrics:
+
+```rust
+use elasticq::{DynamicCircularBuffer, Config};
+use elasticq::metrics::{MetricsRecorder, InstrumentedBuffer};
+use std::sync::Arc;
+
+fn main() {
+    // Create a metrics recorder
+    let recorder = MetricsRecorder::new("mqtt_broker");
+
+    // Create an instrumented buffer
+    let buffer = Arc::new(DynamicCircularBuffer::<String>::new(Config::default()).unwrap());
+    let instrumented = InstrumentedBuffer::new(buffer, recorder);
+
+    // All operations are automatically recorded
+    instrumented.push("message".to_string()).unwrap();
+    let _ = instrumented.pop().unwrap();
+
+    // Or wrap an existing buffer reference
+    let buffer2 = DynamicCircularBuffer::<i32>::new(Config::default()).unwrap();
+    let recorder2 = MetricsRecorder::new("events");
+    let instrumented_ref = recorder2.instrument(&buffer2);
+
+    instrumented_ref.push(42).unwrap();
+
+    // Metrics are exported via the metrics crate facade
+    // Use metrics-exporter-prometheus or similar to expose them
 }
 ```
 
@@ -442,6 +646,15 @@ cargo test
 
 # Run with lock-free feature
 cargo test --features lock_free
+
+# Run tests for new v0.3.0 features
+cargo test --features priority
+cargo test --features streams
+cargo test --features persistent
+cargo test --features metrics
+
+# Run all feature tests
+cargo test --all-features
 
 # Run benchmarks
 cargo bench
