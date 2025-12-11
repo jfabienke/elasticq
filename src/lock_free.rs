@@ -326,12 +326,12 @@ impl<T> LockFreeMPSCQueue<T> {
     /// Performs the actual resize operation (consumer only).
     fn resize(&self, guard: &Guard) -> BufferResult<()> {
         // Set resize flag to prevent producers from enqueueing
-        if !self.resizing.compare_exchange(
+        if self.resizing.compare_exchange(
             false,
             true,
             Ordering::AcqRel,
             Ordering::Relaxed,
-        ).is_ok() {
+        ).is_err() {
             // Already resizing
             return Ok(());
         }
@@ -358,15 +358,13 @@ impl<T> LockFreeMPSCQueue<T> {
         let head_packed = self.head.load(Ordering::Acquire);
         let (head_pos, _head_gen) = Self::unpack_head(head_packed);
         let tail_pos = self.tail.load(Ordering::Acquire);
-        
+
         let item_count = head_pos.wrapping_sub(tail_pos);
-        let mut new_index = 0;
-        
-        for i in 0..item_count {
+
+        for (new_index, i) in (0..item_count).enumerate() {
             let old_index = tail_pos.wrapping_add(i) & (current_buffer.capacity - 1);
             let item = unsafe { current_buffer.read(old_index) };
             unsafe { new_buffer.write(new_index, item); }
-            new_index += 1;
         }
         
         // Increment generation for ABA protection

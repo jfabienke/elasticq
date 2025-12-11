@@ -218,7 +218,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                     // Only resize if actually growing
                     DynamicCircularBuffer::<T>::_perform_resize(
                         &mut *buffer_guard,
-                        &mut *capacity_write_guard,
+                        &mut capacity_write_guard,
                         new_logical_capacity_target,
                     )
                     .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -314,7 +314,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                         // Only shrink if target is smaller
                         DynamicCircularBuffer::<T>::_perform_shrink(
                             &mut *buffer_guard,
-                            &mut *capacity_write_guard,
+                            &mut capacity_write_guard,
                             new_logical_capacity_target,
                         )
                         .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -392,7 +392,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                 if new_logical_capacity_target > *capacity_write_guard {
                     DynamicCircularBuffer::<T>::_perform_resize(
                         &mut *buffer_guard,
-                        &mut *capacity_write_guard,
+                        &mut capacity_write_guard,
                         new_logical_capacity_target,
                     )
                     .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -485,7 +485,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                 if new_logical_capacity_target < *capacity_write_guard {
                     DynamicCircularBuffer::<T>::_perform_shrink(
                         &mut *buffer_guard,
-                        &mut *capacity_write_guard,
+                        &mut capacity_write_guard,
                         new_logical_capacity_target,
                     )
                     .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -537,7 +537,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                 if new_logical_capacity_target > *capacity_write_guard {
                     DynamicCircularBuffer::<T>::_perform_resize(
                         &mut *buffer_guard,
-                        &mut *capacity_write_guard,
+                        &mut capacity_write_guard,
                         new_logical_capacity_target,
                     )
                     .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -594,7 +594,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                     if new_logical_capacity_target < *capacity_write_guard {
                         DynamicCircularBuffer::<T>::_perform_shrink(
                             &mut *buffer_guard,
-                            &mut *capacity_write_guard,
+                            &mut capacity_write_guard,
                             new_logical_capacity_target,
                         )
                         .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -671,7 +671,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                 if new_logical_capacity_target > *capacity_write_guard {
                     DynamicCircularBuffer::<T>::_perform_resize(
                         &mut *buffer_guard,
-                        &mut *capacity_write_guard,
+                        &mut capacity_write_guard,
                         new_logical_capacity_target,
                     )
                     .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -734,7 +734,7 @@ impl<T: Send + Sync + 'static> DynamicCircularBuffer<T> {
                 if new_logical_capacity_target < *capacity_write_guard {
                     DynamicCircularBuffer::<T>::_perform_shrink(
                         &mut *buffer_guard,
-                        &mut *capacity_write_guard,
+                        &mut capacity_write_guard,
                         new_logical_capacity_target,
                     )
                     .map_err(|e| BufferError::ResizeError(e.to_string()))?;
@@ -1019,7 +1019,7 @@ impl<T> DynamicCircularBuffer<T> {
                     if new_logical_capacity_target < *capacity_write_guard {
                         let _ = DynamicCircularBuffer::<T>::_perform_shrink(
                             &mut *buffer_guard,
-                            &mut *capacity_write_guard,
+                            &mut capacity_write_guard,
                             new_logical_capacity_target,
                         );
                     }
@@ -1040,7 +1040,7 @@ impl<T> DynamicCircularBuffer<T> {
                     if new_logical_capacity_target < *capacity_write_guard {
                         let _ = DynamicCircularBuffer::<T>::_perform_shrink(
                             &mut *buffer_guard,
-                            &mut *capacity_write_guard,
+                            &mut capacity_write_guard,
                             new_logical_capacity_target,
                         );
                     }

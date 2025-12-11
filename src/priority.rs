@@ -145,20 +145,12 @@ pub struct PriorityCircularBuffer<T> {
 }
 
 /// State for fair queuing algorithm
+#[derive(Default)]
 struct FairQueueState {
     /// Current priority being served
     current_priority: usize,
     /// Consecutive items popped from current priority
     consecutive_count: usize,
-}
-
-impl Default for FairQueueState {
-    fn default() -> Self {
-        Self {
-            current_priority: 0,
-            consecutive_count: 0,
-        }
-    }
 }
 
 /// Thread-safe wrapper type
