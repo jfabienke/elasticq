@@ -447,7 +447,7 @@ The `push_timeout` and `pop_timeout` fields in `Config` are placeholders for pot
 
 ## API Highlights
 
-The main struct is `DynamicCircularBuffer<T>`. Key methods include:
+### Core Buffer (`DynamicCircularBuffer<T>`)
 
 *   `new(config: Config) -> Result<Self, BufferError>`: Creates a new buffer.
 *   `push(&self, item: T) -> Result<(), BufferError>`
@@ -456,6 +456,39 @@ The main struct is `DynamicCircularBuffer<T>`. Key methods include:
 *   `pop_batch(&self, max_items: usize) -> Result<Vec<T>, BufferError>`
 *   Async variants (if `async` feature enabled): `push_async`, `pop_async`, `push_batch_async`, `pop_batch_async`, and `*_timeout` versions.
 *   Utilities: `len()`, `is_empty()`, `capacity()`, `clear()`, `iter() -> Vec<T> (clones items)`, `drain() -> Vec<T> (consumes items)`.
+
+### Priority Queue (`priority` feature)
+
+*   `PriorityCircularBuffer<T>`: Multi-level priority queue
+*   `PriorityConfig`: Configuration with `with_priority_levels()`, `with_fair_queuing()`, `with_max_consecutive_per_priority()`
+*   `push_with_priority(&self, item: T, priority: usize)`: Push with specific priority
+*   `pop(&self)`: Pop highest priority item (with fair queuing if enabled)
+*   `pop_from_priority(&self, priority: usize)`: Pop from specific priority level
+*   `stats(&self) -> PriorityStats`: Per-priority statistics
+
+### Async Streams (`streams` feature)
+
+*   `BufferStream<T>`: Implements `futures_core::Stream`
+*   `BufferSink<T>`: For sending items with `send()` and `send_batch()`
+*   `BufferChannel<T>`: Channel-like API with `send()`, `recv()`, `recv_timeout()`
+*   `BufferStreamExt`: Extension trait adding `stream_sink_pair()` to buffers
+
+### Persistence (`persistent` feature)
+
+*   `PersistentCircularBuffer<T>`: File-backed buffer with crash recovery
+*   `PersistentConfig`: Configuration with `with_file_path()`, `with_sync_mode()`, `with_max_log_entries()`
+*   `SyncMode`: `NoSync`, `Periodic(Duration)`, `EveryWrite`
+*   `sync(&self)`: Force sync to disk
+*   `compact(&self)`: Compact the write-ahead log
+*   `stats(&self) -> PersistentStats`: Persistence statistics
+
+### Metrics (`metrics` feature)
+
+*   `MetricsRecorder`: Records queue metrics with configurable queue name
+*   `InstrumentedBuffer<T>`: Wrapper that auto-records all operations
+*   `InstrumentedBufferRef<T>`: Wrapper for borrowed buffer references
+*   `instrument(&self, buffer: &B)`: Wrap a buffer for metrics recording
+*   Metrics: `messages_enqueued`, `messages_dequeued`, `queue_depth`, `queue_capacity`, `operation_duration_seconds`
 
 ## Performance Analysis
 
@@ -633,10 +666,11 @@ Contributions are welcome! Please feel free to submit issues or pull requests. F
 ### Priority Areas for Contribution
 
 *   **Performance Optimizations:** Further improvements to lock-free algorithms
-*   **Additional Algorithms:** SPSC, MPMC implementations
-*   **Platform Testing:** Verification on different architectures
+*   **Additional Algorithms:** SPSC (Single-Producer Single-Consumer), MPMC implementations
+*   **Platform Testing:** Verification on different architectures (ARM, x86, etc.)
 *   **Documentation:** Examples, tutorials, and API documentation
 *   **Formal Verification:** Extended TLA+ models and proofs
+*   **Feature Enhancements:** Improvements to priority queues, persistence, streams, and metrics
 
 ### Development Commands
 
