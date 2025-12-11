@@ -65,3 +65,7 @@ harness = false
 name = "lock_free_benchmarks"
 harness = false
 required-features = ["lock_free"]
+
+[[bench]]
+name = "feature_benchmarks"
+harness = false
