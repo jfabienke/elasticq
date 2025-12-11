@@ -562,6 +562,47 @@ Real-world MQTT proxy simulation (4 publishers → 1 processor):
 *   **Message Loss:** <1% under extreme load (configurable backpressure)
 *   **Latency:** Sub-millisecond processing for 4,000 message batches
 
+### v0.3.0 Feature Benchmarks
+
+#### Priority Queue Performance
+
+| Benchmark | Time | Throughput |
+|-----------|------|------------|
+| push_pop_high_priority | **89 ns** | ~11.2M ops/sec |
+| push_pop_low_priority | **115 ns** | ~8.7M ops/sec |
+| mixed_priorities_strict | **310 ns** | ~3.2M ops/sec |
+| mixed_priorities_fair | **341 ns** | ~2.9M ops/sec |
+| batch_10 | 659 ns | **15.2M elem/sec** |
+| batch_100 | 5.96 µs | **16.8M elem/sec** |
+| batch_1000 | 59.6 µs | **16.8M elem/sec** |
+| 1000_ops_mixed | 110 µs | **9.1M elem/sec** |
+
+*   Fair queuing adds ~10% overhead vs strict priority ordering
+*   Batch operations scale linearly with excellent throughput
+
+#### Persistence Performance
+
+| Sync Mode | Single Op | Batch 100 | Notes |
+|-----------|-----------|-----------|-------|
+| NoSync | **19.9 µs** | 2.1 ms | Fastest - no fsync |
+| Periodic | **22.0 µs** | - | Background sync every 100ms |
+| EveryWrite | **2.3 ms** | - | Full durability guarantee |
+
+*   NoSync mode is ~100x faster than EveryWrite
+*   Use Periodic sync for balanced durability/performance
+
+#### Metrics Overhead
+
+| Operation | Baseline | Instrumented | Overhead |
+|-----------|----------|--------------|----------|
+| Single push/pop | 120 ns | 670 ns | ~5.6x |
+| Batch 10 | 153 ns | 720 ns | ~4.7x |
+| Batch 100 | 270 ns | 849 ns | ~3.1x |
+| Batch 1000 | 1.57 µs | 2.17 µs | **~1.4x** |
+
+*   Metrics overhead is well-amortized with batch operations
+*   At batch size 1000: only 40% overhead for full observability
+
 ## Quality Assurance
 
 ### Comprehensive Testing Suite
